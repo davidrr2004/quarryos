@@ -1,0 +1,8 @@
+{
+  "name": "quarryos",
+  "private": true,
+  "workspaces": [
+    "backend",
+    "frontend"
+  ]
+}
