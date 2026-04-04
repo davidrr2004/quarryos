@@ -1,4 +1,7 @@
-import InfoPlaceholderCard from "../components/InfoPlaceholderCard";
+import ReportsFilters from "./components/ReportsFilters";
+import KeyReportsSection from "./components/KeyReportsSection";
+import ReportsExportSection from "./components/ReportsExportSection";
+import VisualChartsSection from "./components/VisualChartsSection";
 import PageHeader from "../components/PageHeader";
 import { PageContainer, PageShell } from "../components/PageShell";
 
@@ -12,7 +15,10 @@ export default function ReportsPage() {
           subtitle="fleet · workers · operations"
         />
 
-        <InfoPlaceholderCard message="Reports and exports will be listed here." />
+        <ReportsExportSection />
+        <ReportsFilters />
+        <KeyReportsSection />
+        <VisualChartsSection />
       </PageContainer>
     </PageShell>
   );
