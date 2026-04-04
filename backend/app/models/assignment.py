@@ -21,6 +21,8 @@ class Assignment(Base):
     wage_per_run = Column(Numeric(10, 2), nullable=False)
     runs_completed = Column(Integer, default=0, nullable=False)
     total_earned = Column(Numeric(10, 2), default=0.00, nullable=False)
+    pickup_destination = Column(String, nullable=True)
+    dropping_destination = Column(String, nullable=True)
     return_status = Column(Enum(ReturnStatus), default=ReturnStatus.pending, nullable=False)
     issue_reason = Column(String, nullable=True)
     assigned_at = Column(DateTime(timezone=True), default=datetime.utcnow, nullable=False)
