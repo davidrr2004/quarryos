@@ -16,9 +16,11 @@ export default function IssueDialog({
   onCancel,
   onConfirm,
 }: IssueDialogProps) {
+  if (!worker) return null;
+
   return (
     <DialogShell
-      open={Boolean(worker)}
+      open
       onClose={onCancel}
       panelClassName="max-w-md rounded-[var(--radius-box)] border border-[var(--color-border-soft)] bg-white p-5 shadow-[var(--shadow-soft)]"
     >
