@@ -1,4 +1,7 @@
-import InfoPlaceholderCard from "../components/InfoPlaceholderCard";
+import FinanceSummaryCards from "./components/FinanceSummaryCards";
+import ExpenseTrackingSection from "./components/ExpenseTrackingSection";
+import DriverPaymentsSection from "./components/DriverPaymentsSection";
+import TripRevenueSection from "./components/TripRevenueSection";
 import PageHeader from "../components/PageHeader";
 import { PageContainer, PageShell } from "../components/PageShell";
 
@@ -12,7 +15,10 @@ export default function FinancePage() {
           subtitle="payments · expenses · summaries"
         />
 
-        <InfoPlaceholderCard message="Finance dashboard content will appear here." />
+        <FinanceSummaryCards />
+        <ExpenseTrackingSection />
+        <DriverPaymentsSection />
+        <TripRevenueSection />
       </PageContainer>
     </PageShell>
   );
