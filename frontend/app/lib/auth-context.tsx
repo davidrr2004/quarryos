@@ -39,6 +39,12 @@ function getSnapshot() {
   return authState;
 }
 
+const serverSnapshot: AuthState = { user: null, loading: true };
+
+function getServerSnapshot() {
+  return serverSnapshot;
+}
+
 let initialized = false;
 
 function initAuth() {
@@ -78,7 +84,7 @@ const AuthContext = createContext<AuthContextType>({
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [ready, setReady] = useState(false);
-  const state = useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
+  const state = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
 
   if (!ready) {
     initAuth();
