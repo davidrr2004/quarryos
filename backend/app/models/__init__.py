@@ -1,3 +1,4 @@
+from app.models.base import Base
 from app.models.user import User, UserRole
 from app.models.worker import Worker
 from app.models.vehicle import Vehicle, VehicleType, VehicleStatus

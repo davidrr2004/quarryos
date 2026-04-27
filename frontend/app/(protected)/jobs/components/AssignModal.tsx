@@ -18,8 +18,8 @@ const VEHICLE_EMOJIS: Record<VehicleType, string> = {
 };
 
 const AVATAR_COLORS = [
-  "#F59E0B", "#8B5CF6", "#10B981", "#3B82F6",
-  "#EF4444", "#EC4899", "#14B8A6", "#F97316",
+  "#475569", "#64748b", "#334155", "#1e293b",
+  "#0f172a", "#374151", "#4b5563", "#6b7280",
 ];
 function getAvatarColor(initials: string): string {
   let hash = 0;

@@ -1,36 +1,36 @@
 @import "tailwindcss";
 
 @theme inline {
-  --color-primary: #4169E1;
-  --color-primary-light: #E6F5F7;
-  --color-surface: #F2F4F7;
-  --color-success: #22C55E;
-  --color-warning: #FACC15;
-  --color-error: #EF4444;
-  --color-error-deep: #b91c1c;
-  --color-danger-glow: rgba(220, 38, 38, 0.4);
-  --color-danger-dot: #ff6b6b;
-  --color-disabled: #555;
-  --color-border-soft: #dbe2ea;
+  --color-primary: #1e293b;
+  --color-primary-light: #f1f5f9;
+  --color-surface: #f8fafc;
+  --color-success: #16a34a;
+  --color-warning: #d97706;
+  --color-error: #dc2626;
+  --color-error-deep: #991b1b;
+  --color-danger-glow: rgba(220, 38, 38, 0.25);
+  --color-danger-dot: #ef4444;
+  --color-disabled: #94a3b8;
+  --color-border-soft: #e2e8f0;
   --color-muted: #64748b;
   --color-dimmed: #94a3b8;
-  --color-overlay: rgba(23, 23, 23, 0.45);
+  --color-overlay: rgba(15, 23, 42, 0.5);
 
-  --color-app-bg: #0E0F13;
-  --color-app-card: #1A1C22;
-  --color-app-border: #2A2D38;
-  --color-app-text: #E5E7EB;
-  --color-app-muted: #9CA3AF;
-  --color-app-dimmed: #6B7280;
-  --color-app-overlay: rgba(0, 0, 0, 0.72);
-  --color-app-accent-soft: rgba(250, 204, 21, 0.12);
-  --color-app-accent-border: rgba(250, 204, 21, 0.25);
+  --color-app-bg: #0f172a;
+  --color-app-card: #1e293b;
+  --color-app-border: #334155;
+  --color-app-text: #f1f5f9;
+  --color-app-muted: #94a3b8;
+  --color-app-dimmed: #64748b;
+  --color-app-overlay: rgba(0, 0, 0, 0.6);
+  --color-app-accent-soft: rgba(30, 41, 59, 0.08);
+  --color-app-accent-border: rgba(30, 41, 59, 0.15);
 
-  --radius-box: 24px;
-  --radius-field: 12px;
-  --radius-selector: 8px;
+  --radius-box: 12px;
+  --radius-field: 8px;
+  --radius-selector: 6px;
 
-  --shadow-soft: 0 8px 30px rgba(0, 0, 0, 0.04);
+  --shadow-soft: 0 1px 3px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
 
   --font-sans: var(--font-inter);
   --font-mono: var(--font-roboto-mono);
@@ -38,19 +38,13 @@
 
 :root {
   --background: #ffffff;
-  --foreground: #171717;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #F2F4F7;
-    --foreground: #171717;
-  }
+  --foreground: #0f172a;
 }
 
 body {
-  @apply bg-surface text-slate-900 antialiased;
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-sans, sans-serif);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }

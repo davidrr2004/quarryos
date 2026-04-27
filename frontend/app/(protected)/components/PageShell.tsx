@@ -13,7 +13,7 @@ const maxWidthClass: Record<MaxWidth, string> = {
 };
 
 export function PageShell({ children }: { children: ReactNode }) {
-  return <main className="min-h-screen bg-surface px-4 py-4 pb-28 text-slate-900 font-sans">{children}</main>;
+  return <main className="min-h-screen bg-[var(--color-surface)] px-4 py-5 pb-28 text-slate-900 font-sans">{children}</main>;
 }
 
 export function PageContainer({ children, maxWidth = "5xl" }: PageContainerProps) {

@@ -13,10 +13,10 @@ import { StatCard, StatsGrid } from "../components/StatsGrid";
 import type { Worker, WorkerFormValues } from "./components/types";
 
 const PALETTES = [
-  "linear-gradient(135deg,#0ea5e9,#6366f1)",
-  "linear-gradient(135deg,#ec4899,#f97316)",
-  "linear-gradient(135deg,#14b8a6,#22c55e)",
-  "linear-gradient(135deg,#f59e0b,#d97706)",
+  "linear-gradient(135deg,#334155,#1e293b)",
+  "linear-gradient(135deg,#475569,#334155)",
+  "linear-gradient(135deg,#1e293b,#0f172a)",
+  "linear-gradient(135deg,#64748b,#475569)",
 ];
 
 const INITIAL_WORKERS: Worker[] = [
@@ -24,7 +24,7 @@ const INITIAL_WORKERS: Worker[] = [
     id: 1,
     name: "Ahmad Raza",
     initials: "AR",
-    avatar: "linear-gradient(135deg,#f59e0b,#d97706)",
+    avatar: "linear-gradient(135deg,#334155,#1e293b)",
     eid: "EMP-001",
     phone: "+60 12-334 9090",
     assigned: { vtype: "Pickup", vnum: "KL-2341" },
@@ -33,7 +33,7 @@ const INITIAL_WORKERS: Worker[] = [
     id: 2,
     name: "Siti Nora",
     initials: "SN",
-    avatar: "linear-gradient(135deg,#8b5cf6,#ec4899)",
+    avatar: "linear-gradient(135deg,#475569,#334155)",
     eid: "EMP-002",
     phone: "+60 19-774 2291",
     assigned: { vtype: "Truck", vnum: "KL-3301" },
@@ -42,7 +42,7 @@ const INITIAL_WORKERS: Worker[] = [
     id: 3,
     name: "Muthu Kumar",
     initials: "MK",
-    avatar: "linear-gradient(135deg,#f97316,#ef4444)",
+    avatar: "linear-gradient(135deg,#1e293b,#0f172a)",
     eid: "EMP-003",
     phone: "+60 16-800 4511",
     assigned: null,
@@ -51,7 +51,7 @@ const INITIAL_WORKERS: Worker[] = [
     id: 4,
     name: "Ravi Shankar",
     initials: "RS",
-    avatar: "linear-gradient(135deg,#22c55e,#0ea5e9)",
+    avatar: "linear-gradient(135deg,#64748b,#475569)",
     eid: "EMP-004",
     phone: "+60 11-220 9930",
     assigned: { vtype: "Truck", vnum: "KL-1142" },
