@@ -3,7 +3,7 @@ import type { WorkerCard } from "./types";
 
 type WorkerStatusCardProps = {
   worker: WorkerCard;
-  onMarkReturned: (workerId: number) => void;
+  onMarkReturned: (workerId: string) => void;
   onOpenIssue: (worker: WorkerCard) => void;
 };
 

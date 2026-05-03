@@ -2,6 +2,7 @@ import FinanceSummaryCards from "./components/FinanceSummaryCards";
 import ExpenseTrackingSection from "./components/ExpenseTrackingSection";
 import DriverPaymentsSection from "./components/DriverPaymentsSection";
 import TripRevenueSection from "./components/TripRevenueSection";
+import WorkerPaymentForm from "./components/WorkerPaymentForm";
 import PageHeader from "../components/PageHeader";
 import { PageContainer, PageShell } from "../components/PageShell";
 
@@ -16,9 +17,10 @@ export default function FinancePage() {
         />
 
         <FinanceSummaryCards />
-        <ExpenseTrackingSection />
+        <WorkerPaymentForm />
         <DriverPaymentsSection />
         <TripRevenueSection />
+        <ExpenseTrackingSection />
       </PageContainer>
     </PageShell>
   );

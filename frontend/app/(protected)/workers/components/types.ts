@@ -4,7 +4,7 @@ export type AssignedVehicle = {
 };
 
 export type Worker = {
-  id: number;
+  id: string;
   name: string;
   initials: string;
   avatar: string;

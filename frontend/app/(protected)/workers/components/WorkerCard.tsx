@@ -2,7 +2,7 @@ import type { Worker } from "./types";
 
 type WorkerCardProps = {
   worker: Worker;
-  onFinance: (workerId: number) => void;
+  onFinance: (workerId: string) => void;
   onEdit: (worker: Worker) => void;
   onDelete: (worker: Worker) => void;
 };

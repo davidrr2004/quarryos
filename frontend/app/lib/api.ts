@@ -174,17 +174,27 @@ export const api = {
   },
 
   // Assignments
-  listAssignments(params?: { batch_id?: string; worker_id?: string }): Promise<ApiResponse> {
+  listAssignments(params?: { batch_id?: string; worker_id?: string; return_status?: string }): Promise<ApiResponse> {
     const parts: string[] = [];
     if (params?.batch_id) parts.push(`batch_id=${params.batch_id}`);
     if (params?.worker_id) parts.push(`worker_id=${params.worker_id}`);
+    if (params?.return_status) parts.push(`return_status=${params.return_status}`);
     const qs = parts.length ? `?${parts.join("&")}` : "";
     return request(`/assignments${qs}`);
   },
+  getAssignment(id: string): Promise<ApiResponse> {
+    return request(`/assignments/${id}`);
+  },
+  getPendingWorkerIds(): Promise<ApiResponse> {
+    return request("/assignments/pending-worker-ids");
+  },
   createAssignment(data: {
-    batch_id: string;
     worker_id: string;
     vehicle_id: string;
+    batch_id?: string;
+    route_from?: string;
+    route_to?: string;
+    distance_km?: number;
     pickup_destination?: string;
     dropping_destination?: string;
   }): Promise<ApiResponse> {
@@ -193,14 +203,23 @@ export const api = {
   updateAssignment(id: string, data: Record<string, unknown>): Promise<ApiResponse> {
     return request(`/assignments/${id}`, { method: "PATCH", body: JSON.stringify(data) });
   },
+  deleteAssignment(id: string): Promise<ApiResponse> {
+    return request(`/assignments/${id}`, { method: "DELETE" });
+  },
 
   // Payments
   listPayments(params?: { worker_id?: string }): Promise<ApiResponse> {
     const qs = params?.worker_id ? `?worker_id=${params.worker_id}` : "";
     return request(`/payments${qs}`);
   },
+  getPayment(id: string): Promise<ApiResponse> {
+    return request(`/payments/${id}`);
+  },
   createPayment(data: { worker_id: string; amount: number; advance_payment?: number; notes?: string }): Promise<ApiResponse> {
     return request("/payments", { method: "POST", body: JSON.stringify(data) });
+  },
+  updatePayment(id: string, data: { status?: string; advance_payment?: number; notes?: string }): Promise<ApiResponse> {
+    return request(`/payments/${id}`, { method: "PATCH", body: JSON.stringify(data) });
   },
 
   // Vehicle Costs

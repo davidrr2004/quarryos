@@ -1,12 +1,12 @@
 export type WorkerStatus = "returned" | "pending" | "issue";
 
-export type WorkerCard = {
-  id: number;
+export interface WorkerCard {
+  id: string;
   name: string;
   initials: string;
   avatar: string;
   vehicleNumber: string;
-  vehicleType: string;
+  vehicleType: "Pickup" | "Truck" | "Minivan";
   route: string;
   runs: number;
   wage: number;

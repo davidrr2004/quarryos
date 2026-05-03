@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import AddCostDialog from "./components/AddCostDialog";
 import AddVehicleDialog from "./components/AddVehicleDialog";
@@ -11,109 +11,46 @@ import PageHeader from "../components/PageHeader";
 import { PageContainer, PageShell } from "../components/PageShell";
 import SectionLabel from "../components/SectionLabel";
 import { StatCard, StatsGrid } from "../components/StatsGrid";
+import { api, ApiResponse } from "../../lib/api";
 import type {
   FleetAddVehicleValues,
   FleetCostType,
   FleetFilterStatus,
   FleetVehicle,
   FleetVehicleType,
+  FleetVehicleStatus,
+  FleetCostEntry,
+  FleetTripEntry,
 } from "./components/types";
 
-const INITIAL_FLEET: Record<FleetVehicleType, FleetVehicle[]> = {
-  Truck: [
-    {
-      num: "KL-5510",
-      status: "Working",
-      assignedTo: "Ahmad Raza",
-      totalRuns: 16,
-      totalEarn: 1440,
-      costs: [
-        { type: "Fuel", amt: 120, note: "Morning top up" },
-        { type: "Maintenance", amt: 85, note: "Hydraulic oil" },
-      ],
-      trips: [
-        { route: "Route A", runs: 6, earn: 540, date: "Apr 2", worker: "Ahmad Raza" },
-        { route: "Route B", runs: 4, earn: 360, date: "Apr 3", worker: "Ahmad Raza" },
-      ],
-    },
-    {
-      num: "KL-1142",
-      status: "Maintenance",
-      assignedTo: null,
-      totalRuns: 9,
-      totalEarn: 765,
-      costs: [{ type: "Maintenance", amt: 210, note: "Brake inspection" }],
-      trips: [{ route: "Route A", runs: 5, earn: 425, date: "Apr 1", worker: "Ravi Shankar" }],
-    },
-    {
-      num: "KL-8841",
-      status: "Working",
-      assignedTo: "Siti Nora",
-      totalRuns: 12,
-      totalEarn: 1020,
-      costs: [{ type: "Fuel", amt: 95, note: "Refill" }],
-      trips: [{ route: "Route C", runs: 4, earn: 340, date: "Apr 2", worker: "Siti Nora" }],
-    },
-  ],
-  Pickup: [
-    {
-      num: "KL-2341",
-      status: "Working",
-      assignedTo: "Lee Chong",
-      totalRuns: 14,
-      totalEarn: 980,
-      costs: [{ type: "Fuel", amt: 80, note: "Fuel refill" }],
-      trips: [{ route: "Route D", runs: 4, earn: 300, date: "Apr 2", worker: "Lee Chong" }],
-    },
-    {
-      num: "KL-3301",
-      status: "Working",
-      assignedTo: "Siti Nora",
-      totalRuns: 11,
-      totalEarn: 935,
-      costs: [{ type: "Parking", amt: 20, note: "Night yard" }],
-      trips: [{ route: "Route B", runs: 3, earn: 255, date: "Apr 3", worker: "Siti Nora" }],
-    },
-    {
-      num: "KL-9988",
-      status: "Working",
-      assignedTo: null,
-      totalRuns: 7,
-      totalEarn: 525,
-      costs: [],
-      trips: [],
-    },
-  ],
-  Minivan: [
-    {
-      num: "KL-1542",
-      status: "Maintenance",
-      assignedTo: null,
-      totalRuns: 6,
-      totalEarn: 270,
-      costs: [{ type: "Maintenance", amt: 145, note: "Tyre replacement" }],
-      trips: [{ route: "Route C", runs: 2, earn: 90, date: "Apr 1", worker: "Muthu Kumar" }],
-    },
-    {
-      num: "KL-7720",
-      status: "Working",
-      assignedTo: "Ravi Shankar",
-      totalRuns: 13,
-      totalEarn: 845,
-      costs: [{ type: "Fuel", amt: 70, note: "Fuel refill" }],
-      trips: [{ route: "Route A", runs: 5, earn: 425, date: "Apr 3", worker: "Ravi Shankar" }],
-    },
-    {
-      num: "KL-5590",
-      status: "Working",
-      assignedTo: "Muthu Kumar",
-      totalRuns: 10,
-      totalEarn: 450,
-      costs: [],
-      trips: [],
-    },
-  ],
-};
+// Backend types
+interface BackendVehicle {
+  id: string;
+  plate_number: string;
+  vehicle_type: "truck" | "pickup" | "minivan";
+  status: "working" | "maintenance" | "not_working";
+  is_active: boolean;
+  created_at: string;
+}
+
+interface BackendCost {
+  id: string;
+  vehicle_id: string;
+  cost_type: string;
+  amount: string;
+  note: string | null;
+  recorded_at: string;
+}
+
+interface BackendAssignment {
+  id: string;
+  vehicle_id: string;
+  worker: { name: string } | null;
+  batch: { route_from: string; route_to: string } | null;
+  runs_completed: number;
+  total_earned: string;
+  return_status: string;
+}
 
 const TAB_LABELS: Array<{ label: string; value: FleetFilterStatus; short: string }> = [
   { label: "All", value: "all", short: "ALL" },
@@ -128,10 +65,36 @@ const EMPTY_VEHICLE: FleetAddVehicleValues = {
   status: "Working",
 };
 
+// Map backend status to frontend status
+function mapStatus(status: BackendVehicle["status"]): FleetVehicleStatus {
+  const statusMap: Record<BackendVehicle["status"], FleetVehicleStatus> = {
+    working: "Working",
+    maintenance: "Maintenance",
+    not_working: "Not Working",
+  };
+  return statusMap[status];
+}
+
+// Map backend vehicle type to frontend type
+function mapVehicleType(type: BackendVehicle["vehicle_type"]): FleetVehicleType {
+  const typeMap: Record<BackendVehicle["vehicle_type"], FleetVehicleType> = {
+    truck: "Truck",
+    pickup: "Pickup",
+    minivan: "Minivan",
+  };
+  return typeMap[type];
+}
+
 export default function FleetPage() {
   const router = useRouter();
 
-  const [fleet, setFleet] = useState(INITIAL_FLEET);
+  const [fleet, setFleet] = useState<Record<FleetVehicleType, FleetVehicle[]>>({
+    Truck: [],
+    Pickup: [],
+    Minivan: [],
+  });
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [filterState, setFilterState] = useState<FleetFilterStatus>("all");
   const [openGroups, setOpenGroups] = useState<Record<FleetVehicleType, boolean>>({
     Truck: false,
@@ -145,6 +108,87 @@ export default function FleetPage() {
   const [costNote, setCostNote] = useState("");
   const [showAddVehicle, setShowAddVehicle] = useState(false);
   const [newVehicle, setNewVehicle] = useState<FleetAddVehicleValues>(EMPTY_VEHICLE);
+  // plate → vehicle_id map so we don't re-fetch on every cost/delete action
+  const [plateToId, setPlateToId] = useState<Map<string, string>>(new Map());  // Reusable fetchData — called on mount and after every mutation
+  async function fetchData() {
+    try {
+      setLoading(true);
+      setError(null);
+
+      const [vehiclesRes, costsRes, assignmentsRes] = await Promise.all([
+        api.listVehicles() as Promise<ApiResponse<BackendVehicle[]>>,
+        api.listCosts() as Promise<ApiResponse<BackendCost[]>>,
+        api.listAssignments() as Promise<ApiResponse<BackendAssignment[]>>,
+      ]);
+
+      const vehicles = vehiclesRes.data || [];
+      const costs = costsRes.data || [];
+      const assignments = assignmentsRes.data || [];
+
+      // Build plate → id map
+      const idMap = new Map<string, string>();
+      vehicles.forEach((v) => idMap.set(v.plate_number, v.id));
+      setPlateToId(idMap);
+
+      // Group costs by vehicle_id
+      const costsByVehicle = new Map<string, FleetCostEntry[]>();
+      costs.forEach((cost) => {
+        const existing = costsByVehicle.get(cost.vehicle_id) || [];
+        existing.push({
+          type: cost.cost_type as FleetCostType,
+          amt: parseFloat(cost.amount),
+          note: cost.note || "—",
+        });
+        costsByVehicle.set(cost.vehicle_id, existing);
+      });
+
+      // Group assignments by vehicle_id
+      const assignmentsByVehicle = new Map<string, FleetTripEntry[]>();
+      assignments.forEach((a) => {
+        if (a.vehicle_id) {
+          const existing = assignmentsByVehicle.get(a.vehicle_id) || [];
+          existing.push({
+            route: a.batch ? `${a.batch.route_from} → ${a.batch.route_to}` : "—",
+            runs: a.runs_completed,
+            earn: parseFloat(a.total_earned) || 0,
+            date: new Date().toLocaleDateString("en-US", { month: "short", day: "numeric" }),
+            worker: a.worker?.name || "Unassigned",
+          });
+          assignmentsByVehicle.set(a.vehicle_id, existing);
+        }
+      });
+
+      const mappedFleet: Record<FleetVehicleType, FleetVehicle[]> = { Truck: [], Pickup: [], Minivan: [] };
+      vehicles.forEach((vehicle) => {
+        const vType = mapVehicleType(vehicle.vehicle_type);
+        const vehicleCosts = costsByVehicle.get(vehicle.id) || [];
+        const vehicleTrips = assignmentsByVehicle.get(vehicle.id) || [];
+        const totalEarn = vehicleTrips.reduce((sum, t) => sum + t.earn, 0);
+        const totalRuns = vehicleTrips.reduce((sum, t) => sum + t.runs, 0);
+        const assignedWorker = assignments
+          .find((a) => a.vehicle_id === vehicle.id && a.return_status === "pending")
+          ?.worker?.name || null;
+        mappedFleet[vType].push({
+          num: vehicle.plate_number,
+          status: mapStatus(vehicle.status),
+          assignedTo: assignedWorker,
+          totalRuns,
+          totalEarn,
+          costs: vehicleCosts,
+          trips: vehicleTrips,
+        });
+      });
+
+      setFleet(mappedFleet);
+    } catch (err) {
+      console.error("Failed to fetch fleet data:", err);
+      setError("Failed to load fleet data. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  useEffect(() => { fetchData(); }, []);
 
   const allVehicles = useMemo(() => Object.values(fleet).flat(), [fleet]);
   const counts = useMemo(() => {
@@ -175,7 +219,7 @@ export default function FleetPage() {
     setCostType("Fuel");
   };
 
-  const saveCost = () => {
+  const saveCost = async () => {
     if (!costTargetVnum) return;
     const amt = Number.parseFloat(costAmount);
     if (!Number.isFinite(amt) || amt <= 0) {
@@ -183,60 +227,84 @@ export default function FleetPage() {
       return;
     }
 
-    setFleet((current) => ({
-      Truck: current.Truck.map((vehicle) =>
-        vehicle.num === costTargetVnum ? { ...vehicle, costs: [{ type: costType, amt, note: costNote || "—" }, ...vehicle.costs] } : vehicle
-      ),
-      Pickup: current.Pickup.map((vehicle) =>
-        vehicle.num === costTargetVnum ? { ...vehicle, costs: [{ type: costType, amt, note: costNote || "—" }, ...vehicle.costs] } : vehicle
-      ),
-      Minivan: current.Minivan.map((vehicle) =>
-        vehicle.num === costTargetVnum ? { ...vehicle, costs: [{ type: costType, amt, note: costNote || "—" }, ...vehicle.costs] } : vehicle
-      ),
-    }));
+    try {
+      // Use plateToId map — no re-fetch needed
+      const vehicleId = plateToId.get(costTargetVnum);
+      if (!vehicleId) {
+        alert("Vehicle not found. Please refresh.");
+        return;
+      }
 
-    setCostTargetVnum(null);
-  };
+      await api.createCost({
+        vehicle_id: vehicleId,
+        cost_type: costType.toLowerCase(),
+        amount: amt,
+        note: costNote || undefined,
+      });
 
-  const deleteVehicle = (type: FleetVehicleType, vehicleNumber: string) => {
-    const confirmed = window.confirm(`Delete vehicle ${vehicleNumber}?`);
-    if (!confirmed) return;
-
-    setFleet((current) => ({
-      ...current,
-      [type]: current[type].filter((vehicle) => vehicle.num !== vehicleNumber),
-    }));
-
-    if (openVehicleNumber === vehicleNumber) {
-      setOpenVehicleNumber(null);
+      setCostTargetVnum(null);
+      // Re-fetch to stay in sync with backend
+      await fetchData();
+    } catch (err) {
+      console.error("Failed to save cost:", err);
+      alert("Failed to save cost. Please try again.");
     }
   };
 
-  const saveVehicle = () => {
+  const deleteVehicle = async (type: FleetVehicleType, vehicleNumber: string) => {
+    const confirmed = window.confirm(`Delete vehicle ${vehicleNumber}?`);
+    if (!confirmed) return;
+
+    try {
+      // Use plateToId map — no re-fetch needed
+      const vehicleId = plateToId.get(vehicleNumber);
+      if (vehicleId) {
+        await api.deleteVehicle(vehicleId);
+      }
+      // Re-fetch to get the accurate list (soft-deleted vehicles gone)
+      await fetchData();
+      if (openVehicleNumber === vehicleNumber) setOpenVehicleNumber(null);
+    } catch (err) {
+      console.error("Failed to delete vehicle:", err);
+      alert("Failed to delete vehicle. Please try again.");
+    }
+  };
+
+  const saveVehicle = async () => {
     const plate = newVehicle.plate.trim().toUpperCase();
     if (!plate) {
       alert("Plate number required.");
       return;
     }
 
-    setFleet((current) => ({
-      ...current,
-      [newVehicle.type]: [
-        ...current[newVehicle.type],
-        {
-          num: plate,
-          status: newVehicle.status,
-          assignedTo: null,
-          totalRuns: 0,
-          totalEarn: 0,
-          costs: [],
-          trips: [],
-        },
-      ],
-    }));
+    try {
+      // Create vehicle in backend
+      const vehicleTypeMap: Record<FleetVehicleType, BackendVehicle["vehicle_type"]> = {
+        Truck: "truck",
+        Pickup: "pickup",
+        Minivan: "minivan",
+      };
 
-    setShowAddVehicle(false);
-    setNewVehicle(EMPTY_VEHICLE);
+      const statusMap: Record<FleetVehicleStatus, BackendVehicle["status"]> = {
+        Working: "working",
+        Maintenance: "maintenance",
+        "Not Working": "not_working",
+      };
+
+      await api.createVehicle({
+        plate_number: plate,
+        vehicle_type: vehicleTypeMap[newVehicle.type],
+        status: statusMap[newVehicle.status],
+      });
+
+      setShowAddVehicle(false);
+      setNewVehicle(EMPTY_VEHICLE);
+      // Re-fetch everything so plateToId map and fleet state are in sync
+      await fetchData();
+    } catch (err) {
+      console.error("Failed to save vehicle:", err);
+      alert("Failed to save vehicle. Plate number may already exist.");
+    }
   };
 
   return (
@@ -284,52 +352,75 @@ export default function FleetPage() {
           />
         </StatsGrid>
 
-        <FleetFilterTabs
-          tabs={TAB_LABELS}
-          filterState={filterState}
-          onChange={setFilterState}
-          getCount={(value) =>
-            value === "all" ? totalVehicles : value === "Working" ? counts.working : value === "Maintenance" ? counts.maintenance : counts.off
-          }
-        />
+        {loading && (
+          <div className="py-8 text-center text-slate-500">
+            <div className="mb-2 inline-block h-6 w-6 animate-spin rounded-full border-2 border-slate-300 border-t-[var(--color-primary)]" />
+            <p className="text-sm">Loading fleet data...</p>
+          </div>
+        )}
 
-        <section className="space-y-3">
-          <SectionLabel title="Fleet Groups" />
+        {error && (
+          <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-red-700">
+            <p className="text-sm font-medium">{error}</p>
+            <button
+              onClick={() => window.location.reload()}
+              className="mt-2 text-xs underline"
+            >
+              Retry
+            </button>
+          </div>
+        )}
 
-          <FleetTypeSection
-            type="Truck"
-            vehicles={fleet.Truck}
-            filterState={filterState}
-            openGroup={openGroups.Truck}
-            openVehicleNumber={openVehicleNumber}
-            onToggleGroup={toggleGroup}
-            onToggleVehicle={toggleVehicle}
-            onOpenCostModal={openCostModal}
-            onDeleteVehicle={deleteVehicle}
-          />
-          <FleetTypeSection
-            type="Pickup"
-            vehicles={fleet.Pickup}
-            filterState={filterState}
-            openGroup={openGroups.Pickup}
-            openVehicleNumber={openVehicleNumber}
-            onToggleGroup={toggleGroup}
-            onToggleVehicle={toggleVehicle}
-            onOpenCostModal={openCostModal}
-            onDeleteVehicle={deleteVehicle}
-          />
-          <FleetTypeSection
-            type="Minivan"
-            vehicles={fleet.Minivan}
-            filterState={filterState}
-            openGroup={openGroups.Minivan}
-            openVehicleNumber={openVehicleNumber}
-            onToggleGroup={toggleGroup}
-            onToggleVehicle={toggleVehicle}
-            onOpenCostModal={openCostModal}
-            onDeleteVehicle={deleteVehicle}
-          />
-        </section>
+        {!loading && !error && (
+          <>
+            <FleetFilterTabs
+              tabs={TAB_LABELS}
+              filterState={filterState}
+              onChange={setFilterState}
+              getCount={(value) =>
+                value === "all" ? totalVehicles : value === "Working" ? counts.working : value === "Maintenance" ? counts.maintenance : counts.off
+              }
+            />
+
+            <section className="space-y-3">
+              <SectionLabel title="Fleet Groups" />
+
+              <FleetTypeSection
+                type="Truck"
+                vehicles={fleet.Truck}
+                filterState={filterState}
+                openGroup={openGroups.Truck}
+                openVehicleNumber={openVehicleNumber}
+                onToggleGroup={toggleGroup}
+                onToggleVehicle={toggleVehicle}
+                onOpenCostModal={openCostModal}
+                onDeleteVehicle={deleteVehicle}
+              />
+              <FleetTypeSection
+                type="Pickup"
+                vehicles={fleet.Pickup}
+                filterState={filterState}
+                openGroup={openGroups.Pickup}
+                openVehicleNumber={openVehicleNumber}
+                onToggleGroup={toggleGroup}
+                onToggleVehicle={toggleVehicle}
+                onOpenCostModal={openCostModal}
+                onDeleteVehicle={deleteVehicle}
+              />
+              <FleetTypeSection
+                type="Minivan"
+                vehicles={fleet.Minivan}
+                filterState={filterState}
+                openGroup={openGroups.Minivan}
+                openVehicleNumber={openVehicleNumber}
+                onToggleGroup={toggleGroup}
+                onToggleVehicle={toggleVehicle}
+                onOpenCostModal={openCostModal}
+                onDeleteVehicle={deleteVehicle}
+              />
+            </section>
+          </>
+        )}
 
         <section>
           <SectionLabel title="Finance Shortcut" />

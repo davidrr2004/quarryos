@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   Bar,
   BarChart,
@@ -17,37 +17,101 @@ import {
   YAxis,
 } from "recharts";
 import SectionLabel from "../../components/SectionLabel";
+import { api, ApiResponse } from "../../../lib/api";
 
 type ChartMode = "trips" | "drivers" | "expenses";
 
-const TRIPS_OVER_TIME = [
-  { day: "Mon", trips: 22 },
-  { day: "Tue", trips: 27 },
-  { day: "Wed", trips: 25 },
-  { day: "Thu", trips: 30 },
-  { day: "Fri", trips: 34 },
-  { day: "Sat", trips: 29 },
-  { day: "Sun", trips: 18 },
-];
+interface BackendAssignment {
+  worker: { name: string } | null;
+  runs_completed: number;
+  total_earned: string;
+  assigned_at: string;
+}
 
-const DRIVER_COMPARISON = [
-  { name: "Ahmad", trips: 18, earnings: 18600 },
-  { name: "Siti", trips: 15, earnings: 15200 },
-  { name: "Ravi", trips: 12, earnings: 12300 },
-  { name: "Muthu", trips: 10, earnings: 9800 },
-];
-
-const EXPENSE_SPLIT = [
-  { name: "Fuel", value: 48 },
-  { name: "Maintenance", value: 22 },
-  { name: "Driver", value: 20 },
-  { name: "Other", value: 10 },
-];
+interface BackendCost {
+  cost_type: string;
+  amount: string;
+}
 
 const PIE_COLORS = ["#0ea5e9", "#f97316", "#10b981", "#6366f1"];
 
 export default function VisualChartsSection() {
   const [mode, setMode] = useState<ChartMode>("trips");
+  const [tripsData, setTripsData] = useState<{ day: string; trips: number }[]>([]);
+  const [driverData, setDriverData] = useState<{ name: string; trips: number; earnings: number }[]>([]);
+  const [expenseData, setExpenseData] = useState<{ name: string; value: number }[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function fetchData() {
+      try {
+        setLoading(true);
+
+        // Fetch assignments for trips and driver data
+        const assignmentsRes = await api.listAssignments() as ApiResponse<BackendAssignment[]>;
+        const assignments = assignmentsRes.data || [];
+
+        // Group trips by day of week
+        const dayMap = new Map<string, number>();
+        const days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+        days.forEach(d => dayMap.set(d, 0));
+        
+        assignments.forEach((a) => {
+          const date = new Date(a.assigned_at);
+          const day = days[date.getDay()];
+          dayMap.set(day, (dayMap.get(day) || 0) + a.runs_completed);
+        });
+
+        const tripsOverTime = days.map(day => ({ day, trips: dayMap.get(day) || 0 }));
+        setTripsData(tripsOverTime);
+
+        // Group by driver
+        const driverMap = new Map<string, { trips: number; earnings: number }>();
+        assignments.forEach((a) => {
+          const name = a.worker?.name || "Unknown";
+          const existing = driverMap.get(name) || { trips: 0, earnings: 0 };
+          existing.trips += a.runs_completed;
+          existing.earnings += parseFloat(a.total_earned || "0");
+          driverMap.set(name, existing);
+        });
+
+        const driverComparison = Array.from(driverMap.entries())
+          .map(([name, data]) => ({ name, trips: data.trips, earnings: data.earnings }))
+          .slice(0, 5);
+        setDriverData(driverComparison);
+
+        // Fetch costs for expense split
+        const costsRes = await api.listCosts() as ApiResponse<BackendCost[]>;
+        const costs = costsRes.data || [];
+
+        const expenseMap = new Map<string, number>();
+        costs.forEach((c) => {
+          const type = c.cost_type.charAt(0).toUpperCase() + c.cost_type.slice(1);
+          expenseMap.set(type, (expenseMap.get(type) || 0) + parseFloat(c.amount || "0"));
+        });
+
+        const totalExpenses = Array.from(expenseMap.values()).reduce((a, b) => a + b, 0);
+        const expenseSplit = totalExpenses > 0 
+          ? Array.from(expenseMap.entries()).map(([name, amount]) => ({ 
+              name, 
+              value: Math.round((amount / totalExpenses) * 100) 
+            }))
+          : [
+              { name: "Fuel", value: 35 },
+              { name: "Maintenance", value: 25 },
+              { name: "Driver", value: 25 },
+              { name: "Other", value: 15 },
+            ];
+        setExpenseData(expenseSplit);
+      } catch (err) {
+        console.error("Failed to fetch chart data:", err);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    fetchData();
+  }, []);
 
   const subtitle = useMemo(() => {
     if (mode === "trips") return "Line chart: trips completed over time";
@@ -78,9 +142,14 @@ export default function VisualChartsSection() {
       </div>
 
       <div style={{ width: "100%", height: 280 }}>
-        {mode === "trips" ? (
+        {loading ? (
+          <div className="flex h-full items-center justify-center text-slate-500">
+            <div className="mb-2 inline-block h-6 w-6 animate-spin rounded-full border-2 border-slate-300 border-t-[var(--color-primary)]" />
+            <span className="ml-2 text-sm">Loading chart data...</span>
+          </div>
+        ) : mode === "trips" ? (
           <ResponsiveContainer width="100%" height={280}>
-            <LineChart data={TRIPS_OVER_TIME} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+            <LineChart data={tripsData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
               <XAxis dataKey="day" tick={{ fontSize: 12 }} />
               <YAxis tick={{ fontSize: 12 }} />
@@ -91,7 +160,7 @@ export default function VisualChartsSection() {
           </ResponsiveContainer>
         ) : mode === "drivers" ? (
           <ResponsiveContainer width="100%" height={280}>
-            <BarChart data={DRIVER_COMPARISON} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+            <BarChart data={driverData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
               <XAxis dataKey="name" tick={{ fontSize: 12 }} />
               <YAxis tick={{ fontSize: 12 }} />
@@ -104,8 +173,8 @@ export default function VisualChartsSection() {
         ) : (
           <ResponsiveContainer width="100%" height={280}>
             <PieChart margin={{ top: 10, right: 10, left: 10, bottom: 10 }}>
-              <Pie data={EXPENSE_SPLIT} dataKey="value" nameKey="name" innerRadius={55} outerRadius={95} paddingAngle={3}>
-                {EXPENSE_SPLIT.map((entry, index) => (
+              <Pie data={expenseData} dataKey="value" nameKey="name" innerRadius={55} outerRadius={95} paddingAngle={3}>
+                {expenseData.map((entry: { name: string }, index: number) => (
                   <Cell key={`${entry.name}-${index}`} fill={PIE_COLORS[index % PIE_COLORS.length]} />
                 ))}
               </Pie>
